@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bot Inglés con IA</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, sans-serif;
+    background: #0f172a;
+    color: white;
+    padding: 1rem;
+  }
+ .container { max-width: 600px; margin: 0 auto; }
+  h1 { text-align: center; margin: 1rem 0; color: #38bdf8; }
+ .chat {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 1rem;
+    height: 400px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+  }
+ .msg { margin: 0.8rem 0; padding: 0.8rem; border-radius: 8px; }
+ .user { background: #0ea5e9; margin-left: 20%; }
+ .bot { background: #334155; margin-right: 20%; }
+ .input-area { display: flex; gap: 0.5rem; }
+  input {
+    flex: 1;
+    padding: 0.8rem;
+    border: none;
+    border-radius: 8px;
+    background: #334155;
+    color: white;
+    font-size: 1rem;
+  }
+  button {
+    padding: 0.8rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    background: #0ea5e9;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; }
+ .tip { font-size: 0.8rem; color: #94a3b8; text-align: center; margin-top: 1rem; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>🤖 English Bot con IA</h1>
+    <div class="chat" id="chat">
+      <div class="msg bot">
+        Hi! Soy tu profe de inglés. Escríbeme algo en español y te ayudo a decirlo en inglés + te corrijo. <br><br>
+        Ej: "Quiero aprender a pedir un café"
+      </div>
+    </div>
+    <div class="input-area">
+      <input type="text" id="userInput" placeholder="Escribe en español..." />
+      <button id="sendBtn">Enviar</button>
+    </div>
+    <p class="tip">Tip: Si te trabas, pregúntale a Meta AI "¿Cómo se dice X en inglés?"</p>
+  </div>
+
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+
+// IMPORTANTE: Aquí va tu lógica de IA. Por ahora usamos simulación.
+// Después conectamos con una API real de Llama o similar.
+async function getAIResponse(textoEspañol) {
+  // SIMULACIÓN - Reemplazar con API real después
+  await new Promise(r => setTimeout(r, 1000)); // Simula delay
+
+  const respuestas = {
+    "hola": "Hello! En inglés 'hola' es 'Hello' o 'Hi'. 'Hi' es más casual. ¿Quieres practicar una conversación?",
+    "como estas": "How are you? Se pronuncia 'jau ar iu'. Responde: 'I'm fine, thanks. And you?'",
+    "quiero un cafe": "I want a coffee, please. Pronunciación: 'ai want a kofi, plis'. El 'please' es clave para ser educado.",
+    "gracias": "Thank you o Thanks. 'Thanks' es informal. Respuesta: 'You're welcome'",
+  };
+
+  const clave = textoEspañol.toLowerCase().replace(/[¿?¡!.,]/g, '');
+  return respuestas[clave] || `Para decir "${textoEspañol}" en inglés, sería: [Aquí iría la traducción de la IA]. <br><br> Tip: Intenta decirlo en voz alta 3 veces.`;
+}
+
+function addMessage(texto, clase) {
+  const msg = document.createElement('div');
+  msg.className = `msg ${clase}`;
+  msg.innerHTML = texto;
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function handleSend() {
+  const texto = input.value.trim();
+  if (!texto) return;
+
+  addMessage(texto, 'user');
+  input.value = '';
+  sendBtn.disabled = true;
+  sendBtn.textContent = '...';
+
+  const respuestaIA = await getAIResponse(texto);
+  addMessage(respuestaIA, 'bot');
+
+  sendBtn.disabled = false;
+  sendBtn.textContent = 'Enviar';
+}
+
+sendBtn.addEventListener('click', handleSend);
+input.addEventListener('keypress', e => {
+  if (e.key === 'Enter') handleSend();
+});
+</script>
+</body>
+</html>
