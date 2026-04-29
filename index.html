@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bot Inglés con IA</title>
+<title>Bot Inglés con IA - Meta AI</title>
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -44,16 +44,18 @@
     font-weight: bold;
     cursor: pointer;
   }
-  button:disabled { opacity: 0.5; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
  .tip { font-size: 0.8rem; color: #94a3b8; text-align: center; margin-top: 1rem; }
+ .error { background: #ef4444; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
 </style>
 </head>
 <body>
   <div class="container">
-    <h1>🤖 English Bot con IA</h1>
+    <h1>🤖 English Bot con Meta AI</h1>
+    <div id="error" class="error" style="display:none;"></div>
     <div class="chat" id="chat">
       <div class="msg bot">
-        Hi! Soy tu profe de inglés. Escríbeme algo en español y te ayudo a decirlo en inglés + te corrijo. <br><br>
+        Hi! Soy tu profe de inglés con IA. Escríbeme algo en español y te ayudo a decirlo en inglés + te corrijo. <br><br>
         Ej: "Quiero aprender a pedir un café"
       </div>
     </div>
@@ -61,29 +63,63 @@
       <input type="text" id="userInput" placeholder="Escribe en español..." />
       <button id="sendBtn">Enviar</button>
     </div>
-    <p class="tip">Tip: Si te trabas, pregúntale a Meta AI "¿Cómo se dice X en inglés?"</p>
+    <p class="tip">⚡ Usando Meta AI (Llama) para respuestas en tiempo real</p>
   </div>
 
 <script>
 const chat = document.getElementById('chat');
 const input = document.getElementById('userInput');
 const sendBtn = document.getElementById('sendBtn');
+const errorDiv = document.getElementById('error');
 
-// IMPORTANTE: Aquí va tu lógica de IA. Por ahora usamos simulación.
-// Después conectamos con una API real de Llama o similar.
+// Configuración de la API
+const HUGGING_FACE_API = 'https://api-inference.huggingface.co/models/meta-llama/Llama-2-7b-chat';
+
+// Obtén el token desde GitHub Secrets o variables de entorno
+const TOKEN = process.env.HUGGING_FACE_TOKEN || localStorage.getItem('hf_token');
+
+if (!TOKEN) {
+  showError('⚠️ Token no configurado. Ve a Settings → Secrets para agregar HUGGING_FACE_TOKEN');
+}
+
+function showError(msg) {
+  errorDiv.textContent = msg;
+  errorDiv.style.display = 'block';
+  setTimeout(() => { errorDiv.style.display = 'none'; }, 5000);
+}
+
 async function getAIResponse(textoEspañol) {
-  // SIMULACIÓN - Reemplazar con API real después
-  await new Promise(r => setTimeout(r, 1000)); // Simula delay
+  try {
+    const prompt = `Eres un profesor de inglés. El estudiante te dice esto en español: "${textoEspañol}"
 
-  const respuestas = {
-    "hola": "Hello! En inglés 'hola' es 'Hello' o 'Hi'. 'Hi' es más casual. ¿Quieres practicar una conversación?",
-    "como estas": "How are you? Se pronuncia 'jau ar iu'. Responde: 'I'm fine, thanks. And you?'",
-    "quiero un cafe": "I want a coffee, please. Pronunciación: 'ai want a kofi, plis'. El 'please' es clave para ser educado.",
-    "gracias": "Thank you o Thanks. 'Thanks' es informal. Respuesta: 'You're welcome'",
-  };
+Responde con:
+1. La traducción al inglés
+2. La pronunciación (fonética)
+3. Una corrección gramatical si es necesario
+4. Un ejemplo de uso
 
-  const clave = textoEspañol.toLowerCase().replace(/[¿?¡!.,]/g, '');
-  return respuestas[clave] || `Para decir "${textoEspañol}" en inglés, sería: [Aquí iría la traducción de la IA]. <br><br> Tip: Intenta decirlo en voz alta 3 veces.`;
+Sé conciso y educativo.`;
+
+    const response = await fetch(HUGGING_FACE_API, {
+      headers: { Authorization: `Bearer ${TOKEN}` },
+      method: 'POST',
+      body: JSON.stringify({ inputs: prompt }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token inválido o expirado');
+      }
+      throw new Error(`Error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result[0]?.generated_text || 'No se pudo generar respuesta';
+  } catch (error) {
+    console.error('Error:', error);
+    showError(`❌ Error: ${error.message}`);
+    return `Disculpa, hubo un error conectando con la IA. Intenta de nuevo.`;
+  }
 }
 
 function addMessage(texto, clase) {
@@ -97,11 +133,15 @@ function addMessage(texto, clase) {
 async function handleSend() {
   const texto = input.value.trim();
   if (!texto) return;
+  if (!TOKEN) {
+    showError('Por favor configura tu token de Hugging Face');
+    return;
+  }
 
   addMessage(texto, 'user');
   input.value = '';
   sendBtn.disabled = true;
-  sendBtn.textContent = '...';
+  sendBtn.textContent = '⏳ Pensando...';
 
   const respuestaIA = await getAIResponse(texto);
   addMessage(respuestaIA, 'bot');
